@@ -3,6 +3,7 @@ package runner
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/nektos/act/pkg/common"
@@ -129,12 +130,22 @@ func setupEnv(ctx context.Context, step step) error {
 	if err != nil {
 		return err
 	}
-	mergeIntoMap(step.getEnv(), step.getStepModel().GetEnv()) // step env should not be overwritten
 
 	exprEval := rc.NewStepExpressionEvaluator(ctx, step)
-	for k, v := range *step.getEnv() {
-		(*step.getEnv())[k] = exprEval.Interpolate(ctx, v)
+	senv := map[string]string{}
+	inputEnvRegex := regexp.MustCompile("[^A-Z0-9-]")
+	inputEnvName := func(k string) string {
+		envKey := inputEnvRegex.ReplaceAllString(strings.ToUpper(k), "_")
+		envKey = fmt.Sprintf("INPUT_%s", strings.ToUpper(envKey))
+		return envKey
 	}
+	for k, v := range step.getStepModel().GetEnv() {
+		senv[k] = exprEval.Interpolate(ctx, v)
+	}
+	for k, v := range rc.Inputs {
+		senv[inputEnvName(k)] = v.(string)
+	}
+	mergeIntoMap(step.getEnv(), senv) // step env should not be overwritten
 
 	common.Logger(ctx).Debugf("setupEnv => %v", *step.getEnv())
 
