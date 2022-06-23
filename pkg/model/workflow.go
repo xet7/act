@@ -1,10 +1,8 @@
 package model
 
 import (
-	"fmt"
 	"io"
 	"reflect"
-	"regexp"
 	"strconv"
 	"strings"
 
@@ -383,12 +381,6 @@ func (s *Step) Environment() map[string]string {
 // GetEnv gets the env for a step
 func (s *Step) GetEnv() map[string]string {
 	env := s.Environment()
-
-	for k, v := range s.With {
-		envKey := regexp.MustCompile("[^A-Z0-9-]").ReplaceAllString(strings.ToUpper(k), "_")
-		envKey = fmt.Sprintf("INPUT_%s", strings.ToUpper(envKey))
-		env[envKey] = v
-	}
 	return env
 }
 
